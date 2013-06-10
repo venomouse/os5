@@ -31,8 +31,11 @@
       <runprofile version="9">
         <runcommandpicklist>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" 127.0.0.1 2000 user1</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" user1 127.0.0.1 2000 </runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" user1 127.0.0.1 2000</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}"</runcommand>
+        <runcommand>"${OUTPUT_PATH}" user1 127.0.0.1 2000</runcommand>
         <rundir>.</rundir>
         <buildfirst>false</buildfirst>
         <terminal-type>0</terminal-type>

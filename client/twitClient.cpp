@@ -6,6 +6,8 @@
  */
 
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <string.h>
 #include <cstdlib>
 #include <sys/socket.h>
@@ -15,7 +17,8 @@
 
 using namespace std;
 
-#define BUFFER_SIZE 140
+#define BUFFER_SIZE 171 + sizeof(unsigned int)
+#define MAX_MSG_SIZE BUFFER_SIZE - 4
 #define FAIL -1
 #define MIN_PORT_NUM 1025
 #define MAX_PORT_NUM 65535
@@ -23,9 +26,10 @@ using namespace std;
 
 int main (int argc, char* argv[])
 {
-	if (argc < 4 || argc > 4)
+	if (argc != 4 )
 	{
 		cerr << "Error: usage: twitClient <CLIENT NAME> <SERVER ADDRESS> <SERVER PORT>" << endl;
+                exit(1);
 	}
 
 	char* client_name = argv[1];
@@ -39,7 +43,7 @@ int main (int argc, char* argv[])
 
 	int client_socket;
 	struct sockaddr_in server_addr;
-	char message[BUFFER_SIZE];
+	string message = "";
 
 	client_socket = socket (AF_INET, SOCK_STREAM, 0);
 	if (client_socket < 0)
@@ -66,9 +70,25 @@ int main (int argc, char* argv[])
 	while (1)
 	{
 		cout << "Enter message to send: " << endl;
-		cin >> message;
+                
+		getline(cin,message);
+                if(message.size() >= MAX_MSG_SIZE - 4)
+                {
+                    message = message.substr(0,MAX_MSG_SIZE-1);
+                }
+                //convert length to string , code snippet from http://www.cplusplus.com/articles/D9j2Nwbp/
+                unsigned int msgSize = message.size();
+                string msgLen = static_cast<ostringstream*>( &(ostringstream() << msgSize) )->str(); 
+                if (msgSize < 10) 
+                {
+                    msgLen = string("00").append(msgLen);
+                }else if (msgSize < 100)
+                {
+                    msgLen = string("0").append(msgLen);
+                }
+                message = msgLen.append(message);
 
-		if (send (client_socket, message, strlen (message),0) < 0)
+		if (send (client_socket, message.c_str(), msgSize + 4 ,0) < 0)
 		{
 			cerr << "Error: Failed to send a message" << endl;
 			break;

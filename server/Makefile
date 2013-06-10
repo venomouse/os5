@@ -1,9 +1,9 @@
-CFLAGS = -Wall -I. 
+CFLAGS = -Wall -I. -g
 
 all : twitServer
 
 twitServer: twitServer.cpp twitServer.h
-	clang twitServer.cpp $(CFLAGS) -o twitServer
+	g++ twitServer.cpp $(CFLAGS) -o twitServer
 	
 clean :
 	rm -rf twitServer

@@ -8,7 +8,7 @@
 #ifndef TWITCLIENT_H
 #define	TWITCLIENT_H
 
-int recvAll (int client_socket, char* buffer);
+
 
 
 
