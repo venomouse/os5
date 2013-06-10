@@ -20,6 +20,7 @@ using namespace std;
 #define MIN_PORT_NUM 1025
 #define MAX_PORT_NUM 65535
 #define BUFFER_SIZE 140
+#define NDEBUG 0
 
 int main(int argc, char *argv[]) {
 
@@ -48,18 +49,25 @@ int main(int argc, char *argv[]) {
 	//The port number is the command parameter
 	server_addr.sin_port = htons(atoi (argv [1]));
 	//TODO check error
-	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	inet_aton("127.0.0.1",&server_addr.sin_addr);
 	memset(&(server_addr.sin_zero), '\0', 8);
 
 	if (bind (server_socket, (struct sockaddr *) &server_addr, sizeof (server_addr)) < 0)
 	{
 		cerr << "Error: failed to bind the socket to the port" << endl;
 	}
+
+
 	//TODO - add setsockopt option?
 
 	if (listen (server_socket, SOMAXCONN) < 0)
 	{
 		cerr << "Error: failed to listen to the port" <<endl;
+	}
+
+	if (!NDEBUG)
+	{
+		cerr << "Binding and listening succeeded" << endl;
 	}
 
 	while (1)

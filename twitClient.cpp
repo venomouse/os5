@@ -17,10 +17,26 @@ using namespace std;
 
 #define BUFFER_SIZE 140
 #define FAIL -1
+#define MIN_PORT_NUM 1025
+#define MAX_PORT_NUM 65535
 
 
 int main (int argc, char* argv[])
 {
+	if (argc < 4 || argc > 4)
+	{
+		cerr << "Error: usage: twitClient <CLIENT NAME> <SERVER ADDRESS> <SERVER PORT>" << endl;
+	}
+
+	char* client_name = argv[1];
+	char* address = argv[2];
+	int port_num = atoi (argv[3]);
+
+	if (port_num < MIN_PORT_NUM || port_num > MAX_PORT_NUM)
+	{
+		cerr << "Error: illegal port number";
+	}
+
 	int client_socket;
 	struct sockaddr_in server_addr;
 	char message[BUFFER_SIZE];
@@ -28,14 +44,18 @@ int main (int argc, char* argv[])
 	client_socket = socket (AF_INET, SOCK_STREAM, 0);
 	if (client_socket < 0)
 	{
-		cerr << "Failed to initialize the socket" << endl;
+		cerr << "Error: Failed to initialize the socket" << endl;
 	}
 
 	server_addr.sin_family = AF_INET;
 	//The port number is the command parameter
-	server_addr.sin_port = htons(atoi (argv [1]));
+	server_addr.sin_port = htons(port_num);
 	//TODO check error
-	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	if (!inet_aton(address,&server_addr.sin_addr))
+	{
+		cerr << "Error: Wrong IP address" << endl;
+	}
+
 	memset(&(server_addr.sin_zero), '\0', 8);
 
 	if (connect (client_socket, (struct sockaddr * )&server_addr, sizeof (server_addr)) < 0)
