@@ -1,4 +1,4 @@
-CFLAGS = -Wall -I. -g
+CFLAGS = -Wall -I. -g -std=c++0x
 
 all : twitServer
 

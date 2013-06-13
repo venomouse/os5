@@ -6,6 +6,8 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
+using namespace std;
+#include <algorithm>
 #include <unistd.h>
 #include <iostream>
 #include <string.h>
@@ -16,8 +18,9 @@
 #include <arpa/inet.h>
 
 #include <twitServer.h>
+#include <sstream>
 
-using namespace std;
+
 
 //commands
 #define CONNECT "connect"
@@ -29,17 +32,28 @@ using namespace std;
 #define BLOCK "BLOCK"
 #define WHO "WHO"
 
+//some buggy clients might do this
+#define SENT_00 -2
+#define FAIL 1
+#define SUCCESS 0
+#define NO_SUCH_USER -2
 
 #define IS_EQUAL == 0
 #define SPACES " \n\r\t"
-#define NAME_SEPERATOR "@"
+#define NAME_SEPARATOR "@"
+#define NOT !
 
-#define FAIL -1;
 #define MIN_PORT_NUM 1025
 #define MAX_PORT_NUM 65535
 #define BUFFER_SIZE 171 + sizeof(unsigned int)
 #define NDEBUG 0
 #define LOCALHOST "127.0.0.1"
+
+//Messages
+#define ERROR string("ERROR ")
+#define USER_NOT_EXIST  string(" does not exist")
+#define PAAMAYIM_NEKUDOTAYIM "::" 
+#define DASHDASH "--" 
 
 int main(int argc, char *argv[]) {
         fd_set master;    // master file descriptor list
@@ -143,10 +157,15 @@ int main(int argc, char *argv[]) {
                     }else{
                            if ((nbytes = recvAll(i,message_buffer)) >= 0)
                            {
-                               parseCommand(i,message_buffer);
+                                       parseCommand(i,message_buffer);
+                           }
+                           else if(nbytes == SENT_00)
+                           {
+                               //ignore , useless packet
                            }
                            else if(nbytes == 0)
                            {
+                               disconnect(getName(i));
                                close(i);
                                FD_CLR(i,&master);
                            }else
@@ -154,9 +173,10 @@ int main(int argc, char *argv[]) {
                                cerr << "Recv error" << endl ; 
                                exit(1);
                            }
+                           message_buffer[0] = '\0';
                     }
                 }
-                message_buffer[0] = '\0';
+                
                 }
 	}
 	return 0;
@@ -173,6 +193,10 @@ int recvAll (int client_socket, char* buffer)
         return 0;
     }
     intMsgSize = atoi(stringSize);
+    if (intMsgSize == 0 )
+    {
+        return SENT_00;
+    }
     while ( ( (recv_result = recv (client_socket, tempBuffer, intMsgSize, 0)) > 0) && 
                         (strlen(buffer)+strlen(tempBuffer) < intMsgSize ) ) 
     {
@@ -192,12 +216,10 @@ int recvAll (int client_socket, char* buffer)
 
 bool parseCommand (int senderFd,const string&  command)
 {
-    int spaceLocation = command.find_first_of(SPACES);
+    command = strip(command);
+    string operation = beforeSpace(command);
+    string args = afterSpace(command);
     
-    string operation = command.substr(0,spaceLocation);
-    //find first char that is not space after the first space
-    string restOfString = command.substr(spaceLocation+1,command.size());
-    string args = restOfString.substr(restOfString.find_first_not_of(SPACES),restOfString.size());
     
     string name = getName(senderFd);
     
@@ -243,34 +265,181 @@ bool disconnect(const string& sender)
 }
 bool twit(const string& sender,const string& message)
 {
-    //twit and notify all followers
-    return 0;
+    if (NOT userExists(sender))//sender is invalid - something is wrong
+    {
+        return FAIL;
+    }
+    for(int fd : users.at(sender).followers)
+    {
+        sendToClient(getName(fd),message);
+    }
+    return SUCCESS;
 }
 
-bool follow(const string& follower, const string& toFollow)
+bool follow( string& follower,  string& toFollow)
 {
-    //add follower to toFollow followers list
-    return 0;
+    string copyname = toFollow; // for error messages
+    toLower(follower);
+    toLower(toFollow);
+    if (NOT userExists(follower))//sender is invalid - something is wrong
+    {
+        return FAIL;
+    }
+    if (NOT userExists(toFollow)) //cant follow - no such user
+    {
+        ostringstream error ;
+        error << ERROR << copyname << USER_NOT_EXIST;
+        sendToClient(follower,error.str());
+        return FAIL;
+    }
+    users.at(toFollow).followers.insert(users.at(follower).sockfd);
+    return SUCCESS;
 }
 
-bool unFollow(const string& follower, const string& toUnfollow)
+bool unFollow( string& follower,  string& toUnfollow)
 {
-    //remove follower to toFollow followers list
-    return 0;
+    string copyname = toUnfollow; // for error messages
+    toLower(follower);
+    toLower(toUnfollow);
+    if (NOT userExists(follower)) //sender is invalid - something is wrong
+    {
+        return FAIL;
+        
+    }
+    if (NOT userExists(toUnfollow)) //cant follow - no such user
+    {
+        
+        sendToClient(follower,copyname.append(USER_NOT_EXIST));
+        return FAIL;
+    }
+    users.at(toUnfollow).followers.erase(users.at(follower).sockfd);
+    return SUCCESS;
 }
-bool directMessage(const string& sender,const string& toAndMessage)
+bool directMessage(string& sender,string& toAndMessage)
 {
+    string copySender = sender;
+    toLower(sender);
+    if (NOT userExists(sender)) //sender is invalid - something is wrong
+    {
+        return FAIL;
+    }
     
-    //DM if not blocked to toFollow followers list
-    return 0;
+    string to = beforeSpace(toAndMessage);
+    string copyTo = to;
+    toLower(to);
+    if (NOT userExists(to)) //cant follow - no such user
+    {
+        
+        sendToClient(sender,to.append(USER_NOT_EXIST));
+        return FAIL;
+    }
+    if (users.at(to).blocked.find(getFd(to)) != users.at(to).blocked.end())
+    {
+        sendToClient(sender,createErrorMsg(to,USER_NOT_EXIST));
+        return FAIL;
+    }
+    ostringstream message;
+    message << getTimeString() 
+            << PAAMAYIM_NEKUDOTAYIM
+            << copySender
+            << NAME_SEPARATOR 
+            << copyTo 
+            << DASHDASH
+            << afterSpace(toAndMessage);
+    
+    sendToClient(to,message);
+    return SUCCESS;
 }
 bool block(const string&  blocker,const string&  toBlock)
 {
-     //add to block list
+    if (NOT userExists(blocker))
+    {
+        return FAIL;
+    }
+    if (NOT userExists(toBlock))
+    {
+        sendToClient(blocker,createErrorMsg(toBlock,USER_NOT_EXIST));
+        return FAIL;
+    }
+    users.at(blocker).blocked.insert(getFd(toBlock));
+    users.at(toBlock).followers.erase(getFd(toBlock));
+    
     return 0;
 }
 bool who(const string& sender)
 {
     //print all users
     return 0;
+}
+
+string& toLower(string &str)
+{
+    transform(str.begin(),str.end(),str.begin(),::tolower);
+    return str;
+}
+
+
+bool sendToClient(const string& name ,const string& message )
+{
+    //find user 
+    //send message
+    //return - success?
+    return SUCCESS;
+}
+bool userExists(const string& userNameLowerCase )
+{
+    return(users.find(userNameLowerCase) != users.end());
+}
+
+
+    
+string beforeSpace(const string& stringWithSpace )
+{
+    int spaceLocation = stringWithSpace.find_first_of(SPACES);
+    string before = stringWithSpace.substr(0,spaceLocation);
+    return strip(before);
+}
+
+    
+string afterSpace(const string& stringWithSpace )
+{
+    int spaceLocation = stringWithSpace.find_first_of(SPACES);
+    string after = stringWithSpace.substr(spaceLocation+1,stringWithSpace.size());
+    return strip(after);
+}
+
+
+string strip(const string& stringWithSpaces )
+{
+    int firstSpace = stringWithSpaces.find_first_of(SPACES);
+    int lastSpace = stringWithSpaces.find_last_of(SPACES);
+    return stringWithSpaces.substr(firstSpace,lastSpace);
+}
+
+int getFd(string& userNameLowerCase)
+{
+    if (NOT userExists(userNameLowerCase))
+    {
+        return NO_SUCH_USER;
+    }
+    return users.at(userNameLowerCase).sockfd; 
+}
+
+
+string getTimeString()
+{
+    ostringstream ret;
+    time_t rawtime;
+    struct tm * ptm;
+    time ( &rawtime );
+    ptm = gmtime ( &rawtime );
+    ret << ptm->tm_hour <<  ":" <<ptm->tm_min;
+    return ret.str();
+}
+
+string createErrorMsg(const string& userName, const string& errorType)
+{
+        ostringstream error ;
+        error << " " <<ERROR << userName << " "  << errorType;
+        return error.str();
 }
