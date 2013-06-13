@@ -22,12 +22,4 @@ int sendMessage (int socket, std::string message);
 
 int recvAll (int client_socket, char* buffer);
 
-
-string getTimeString();
-string createErrorMsg(const string& userName, const string& errorType);
-string beforeSpace(const string& stringWithSpace );
-string afterSpace(const string& stringWithSpace );
-string strip(const string& stringWithSpaces );
-string& toLower(string &str);
-
 #endif /* COMMUNICATIONFUNCTIONS_H_ */
