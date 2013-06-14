@@ -17,6 +17,7 @@ using namespace std;
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+
 #include <twitServer.h>
 #include <sstream>
 
@@ -48,6 +49,8 @@ using namespace std;
 #define BUFFER_SIZE 171 + sizeof(unsigned int)
 #define NDEBUG 0
 #define LOCALHOST "127.0.0.1"
+
+//Messages
 
 //Messages
 #define ERROR string("ERROR ")
@@ -216,9 +219,10 @@ int recvAll (int client_socket, char* buffer)
 
 bool parseCommand (int senderFd,const string&  command)
 {
-    command = strip(command);
-    string operation = beforeSpace(command);
-    string args = afterSpace(command);
+    string cleanCommand = strip(command);
+    
+    string operation = beforeSpace(cleanCommand);
+    string args = afterSpace(cleanCommand);
     
     
     string name = getName(senderFd);
@@ -263,6 +267,7 @@ bool disconnect(const string& sender)
     //remove all references from usersByDf , users , and all blocks / followers
     return 0;
 }
+
 bool twit(const string& sender,const string& message)
 {
     if (NOT userExists(sender))//sender is invalid - something is wrong
@@ -278,9 +283,6 @@ bool twit(const string& sender,const string& message)
 
 bool follow( string& follower,  string& toFollow)
 {
-    string copyname = toFollow; // for error messages
-    toLower(follower);
-    toLower(toFollow);
     if (NOT userExists(follower))//sender is invalid - something is wrong
     {
         return FAIL;
@@ -288,7 +290,7 @@ bool follow( string& follower,  string& toFollow)
     if (NOT userExists(toFollow)) //cant follow - no such user
     {
         ostringstream error ;
-        error << ERROR << copyname << USER_NOT_EXIST;
+        error << ERROR << toFollow << USER_NOT_EXIST;
         sendToClient(follower,error.str());
         return FAIL;
     }
@@ -298,9 +300,6 @@ bool follow( string& follower,  string& toFollow)
 
 bool unFollow( string& follower,  string& toUnfollow)
 {
-    string copyname = toUnfollow; // for error messages
-    toLower(follower);
-    toLower(toUnfollow);
     if (NOT userExists(follower)) //sender is invalid - something is wrong
     {
         return FAIL;
@@ -309,7 +308,7 @@ bool unFollow( string& follower,  string& toUnfollow)
     if (NOT userExists(toUnfollow)) //cant follow - no such user
     {
         
-        sendToClient(follower,copyname.append(USER_NOT_EXIST));
+        sendToClient(follower,toUnfollow.append(USER_NOT_EXIST));
         return FAIL;
     }
     users.at(toUnfollow).followers.erase(users.at(follower).sockfd);
@@ -317,19 +316,14 @@ bool unFollow( string& follower,  string& toUnfollow)
 }
 bool directMessage(string& sender,string& toAndMessage)
 {
-    string copySender = sender;
-    toLower(sender);
     if (NOT userExists(sender)) //sender is invalid - something is wrong
     {
         return FAIL;
     }
     
     string to = beforeSpace(toAndMessage);
-    string copyTo = to;
-    toLower(to);
     if (NOT userExists(to)) //cant follow - no such user
     {
-        
         sendToClient(sender,to.append(USER_NOT_EXIST));
         return FAIL;
     }
@@ -341,13 +335,13 @@ bool directMessage(string& sender,string& toAndMessage)
     ostringstream message;
     message << getTimeString() 
             << PAAMAYIM_NEKUDOTAYIM
-            << copySender
+            << sender
             << NAME_SEPARATOR 
-            << copyTo 
+            << to 
             << DASHDASH
             << afterSpace(toAndMessage);
     
-    sendToClient(to,message);
+    sendToClient(to,message.str());
     return SUCCESS;
 }
 bool block(const string&  blocker,const string&  toBlock)
@@ -372,12 +366,20 @@ bool who(const string& sender)
     return 0;
 }
 
-string& toLower(string &str)
-{
-    transform(str.begin(),str.end(),str.begin(),::tolower);
-    return str;
-}
 
+
+bool connect(int senderFd, const string& name)
+{      
+    string lowCaseName = toLower(name);
+    if(userExists(lowCaseName))
+    {
+        // print error msg
+        return FAIL;
+    }
+    usersByFd[senderFd] = name;
+    users.insert(make_pair(lowCaseName,User(name,senderFd)));
+    return SUCCESS;
+}
 
 bool sendToClient(const string& name ,const string& message )
 {
@@ -389,6 +391,44 @@ bool sendToClient(const string& name ,const string& message )
 bool userExists(const string& userNameLowerCase )
 {
     return(users.find(userNameLowerCase) != users.end());
+}
+
+
+
+int getFd(const string& userName)
+{
+    string lowName = toLower(userName);    
+    if (NOT userExists(lowName))
+    {
+        return NO_SUCH_USER;
+    }
+    return users.at(lowName).sockfd; 
+}
+
+User& getUser(const string& userName)
+{
+    string lowName = toLower(userName);
+    return users.at(lowName);
+}
+
+
+
+string getTimeString()
+{
+    ostringstream ret;
+    time_t rawtime;
+    struct tm * ptm;
+    time ( &rawtime );
+    ptm = gmtime ( &rawtime );
+    ret << ptm->tm_hour <<  ":" <<ptm->tm_min;
+    return ret.str();
+}
+
+string createErrorMsg(const string& userName, const string& errorType)
+{
+        ostringstream error ;
+        error << " " <<ERROR << userName << " "  << errorType;
+        return error.str();
 }
 
 
@@ -416,30 +456,10 @@ string strip(const string& stringWithSpaces )
     return stringWithSpaces.substr(firstSpace,lastSpace);
 }
 
-int getFd(string& userNameLowerCase)
-{
-    if (NOT userExists(userNameLowerCase))
-    {
-        return NO_SUCH_USER;
-    }
-    return users.at(userNameLowerCase).sockfd; 
-}
 
-
-string getTimeString()
+string toLower(const string &str)
 {
-    ostringstream ret;
-    time_t rawtime;
-    struct tm * ptm;
-    time ( &rawtime );
-    ptm = gmtime ( &rawtime );
-    ret << ptm->tm_hour <<  ":" <<ptm->tm_min;
-    return ret.str();
-}
-
-string createErrorMsg(const string& userName, const string& errorType)
-{
-        ostringstream error ;
-        error << " " <<ERROR << userName << " "  << errorType;
-        return error.str();
+    string copy =str;
+    transform(copy.begin(),copy.end(),copy.begin(),::tolower);
+    return copy;
 }
