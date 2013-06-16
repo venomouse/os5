@@ -2,8 +2,14 @@
 <configurationDescriptor version="88">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df root="." name="client">
+      <in>common.cpp</in>
+      <in>common.h</in>
       <in>twitClient.cpp</in>
     </df>
+    <logicalFolder name="os5" displayName="os5" projectFiles="true" root="..">
+      <itemPath>../common.cpp</itemPath>
+      <itemPath>../common.h</itemPath>
+    </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
                    projectFiles="false"
@@ -39,6 +45,16 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../common.cpp" ex="false" tool="1" flavor2="4">
+        <ccTool>
+        </ccTool>
+      </item>
+      <item path="../common.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="common.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="common.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="twitClient.cpp" ex="false" tool="1" flavor2="4">
         <ccTool>
         </ccTool>

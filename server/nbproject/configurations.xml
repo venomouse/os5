@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configurationDescriptor version="88">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <logicalFolder name="os5" displayName="os5" projectFiles="true" root="..">
+      <itemPath>../common.cpp</itemPath>
+      <itemPath>../common.h</itemPath>
+    </logicalFolder>
     <df root="." name="server">
       <in>twitServer.cpp</in>
+      <in>twitServer.h</in>
     </df>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -39,9 +44,17 @@
           </ccTool>
         </makeTool>
       </makefileType>
+      <item path="../common.cpp" ex="false" tool="1" flavor2="8">
+        <ccTool>
+        </ccTool>
+      </item>
+      <item path="../common.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="twitServer.cpp" ex="false" tool="1" flavor2="4">
         <ccTool>
         </ccTool>
+      </item>
+      <item path="twitServer.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

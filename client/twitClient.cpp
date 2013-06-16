@@ -47,15 +47,15 @@ void checkCommandArguments  (char* clientName, int portNum)
 
 }
 
-int isExit (string message)
+bool isExit (string message)
 {
 	string command = beforeSpace (message);
 	if (command.compare ("EXIT") == 0)
 	{
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
 
 }
 
@@ -63,6 +63,7 @@ int isExit (string message)
 
 int main (int argc, char* argv[])
 {
+	int nbytes;
 	if (argc != 4 )
 	{
 		cerr << "Error: usage: twitClient <CLIENT NAME> <SERVER ADDRESS> <SERVER PORT>" << endl;
@@ -105,6 +106,7 @@ int main (int argc, char* argv[])
 	}
 
 	memset(&(server_addr.sin_zero), '\0', 8);
+
 
 	if (connect (client_socket, (struct sockaddr * )&server_addr, sizeof (server_addr)) < 0)
 	{
@@ -155,9 +157,15 @@ int main (int argc, char* argv[])
 
 		if (FD_ISSET (client_socket, &read_fds))
 		{
-			if (recvAll(client_socket, serverMessageBuffer) < 0)
+
+			if ( (nbytes = recvAll(client_socket, serverMessageBuffer) )< 0)
 			{
 				cerr << "Error: failed to receive a message from the server" << endl;
+			}
+			else if (nbytes == 0)
+			{
+				cout << "Disconnected" << endl;
+				exit(0);
 			}
 			else
 			{
@@ -168,9 +176,12 @@ int main (int argc, char* argv[])
 		if (FD_ISSET (STDIN_FILENO, &read_fds))
 		{
 			getline (cin, message);
+                        string command = beforeSpace(message); 
+                        string args = afterSpace(message); 
+                        string commandToUpperCase = toUpper(command);
+                        commandToUpperCase.append(" ");
 
-
-			if (sendMessage(client_socket, message) < 0)
+			if (sendMessage(client_socket, commandToUpperCase.append(args)) < 0)
 			{
 				cerr << "Error: Failed to send a message" << endl;
 				break;

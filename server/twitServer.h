@@ -30,21 +30,21 @@ struct User {
 map<string,User> users;
 map<int,string> usersByFd;
 
-const string& getName(int fd) ;
-bool connect(int senderFd, const string& name);
-bool parseCommand (int senderFd, const string& command);
-bool disconnect(const string& sender);
-bool twit(const string& sender,const string& message);
-bool follow( string& follower,  string& toFollow);
-bool unFollow( string& follower,  string& toUnfollow);
-bool directMessage(string& sender,string& toAndMessage);
-bool block(const string&  blocker,const string&  toBlock);
-bool who(const string& sender);
-bool log(string message);
-string toLower(const string &str);
+string getName(int fd) ;
+int connectClient(int senderFd, const string& name);
+int parseCommand (int senderFd, const string& command);
+int disconnect(int senderFd);
+int twit(int senderFd,const string& message);
+int follow( int senderFd,  string& toFollow);
+int unFollow( int senderFd,  string& toUnfollow);
+int directMessage(int senderFd,string& toAndMessage);
+int block(int  blockerFd,const string&  toBlock);                                                                                                                                                                                                  
+int who(int  senderFd);                                                 
+int log(const string& message);
 bool userExists(const string& userNameLowerCase );
-bool sendToClient(const string& name ,const string& message );
+bool fdExist(int fd);                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 int getFd(const string& userNameLowerCase);
+int openLog();
 
 string strip(const string& stringWithSpaces );
 string beforeSpace(const string& stringWithSpace );
