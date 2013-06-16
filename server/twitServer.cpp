@@ -6,7 +6,7 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
-using namespace std;
+
 #include <algorithm>
 #include <unistd.h>
 #include <iostream>
@@ -18,8 +18,10 @@ using namespace std;
 #include <arpa/inet.h>
 
 
-#include <twitServer.h>
 #include <sstream>
+#include <utility>
+#include "common.h"
+#include "twitServer.h"
 
 
 
@@ -58,10 +60,16 @@ using namespace std;
 #define PAAMAYIM_NEKUDOTAYIM "::" 
 #define DASHDASH "--" 
 
+using std::cerr;
+using std::endl;
+using std::ostringstream;
+using std::make_pair;
+
+
 int main(int argc, char *argv[]) {
         fd_set master;    // master file descriptor list
         fd_set read_fds;  // temp file descriptor list for select()
-        int newfd;        // newly accept()ed socket descriptor
+        int newfd;        // newly accepted socket descriptor
         int fdmax;        // maximum file descriptor number
         struct sockaddr_storage remoteaddr; // client address
 
@@ -81,6 +89,7 @@ int main(int argc, char *argv[]) {
 	if (port_number < MIN_PORT_NUM || port_number > MAX_PORT_NUM)
 	{
 		cerr << "Error: illegal port number" << endl;
+		exit (1);
 	}
 
 	struct sockaddr_in server_addr;
@@ -90,6 +99,7 @@ int main(int argc, char *argv[]) {
 	if (server_socket < 1)
 	{
 		cerr << "Error: failed to initialize a socket" << endl;
+		exit(1);
 	}
 
 	server_addr.sin_family = AF_INET;
@@ -156,8 +166,28 @@ int main(int argc, char *argv[]) {
                             {    // keep track of the max
                                 fdmax = newfd;
                             }
+                            //receiving the name
+                            if ((nbytes = recvAll (newfd, message_buffer)) >=0)
+                            {
+                            	//if a client already exists
+                            	if (connect (newfd, string (message_buffer)) <0)
+                            	{
+                            		if (sendMessage(newfd, string(CLIENT_EXISTS_SERVER_MESSAGE)))
+                            		{
+                            			cerr << "Error: failed to send a message to the client" << endl;
+                            		}
+
+                            		close (newfd);
+                            		continue;
+                            	}
+                            	else if (sendMessage(newfd, string(CONNECTION_SUCCESSFUL_MESSAGE)) == 0)
+                            	{
+                            		cerr << "Error: failed to send a message to the client" << endl;
+                            	}
+                            }
                         }
                     }else{
+
                            if ((nbytes = recvAll(i,message_buffer)) >= 0)
                            {
                                        parseCommand(i,message_buffer);
@@ -184,7 +214,7 @@ int main(int argc, char *argv[]) {
 	}
 	return 0;
 }
-
+/*
 int recvAll (int client_socket, char* buffer)
 {
     int recv_result;
@@ -215,7 +245,7 @@ int recvAll (int client_socket, char* buffer)
     return intMsgSize;
 }
 
-
+*/
 
 bool parseCommand (int senderFd,const string&  command)
 {
@@ -373,7 +403,7 @@ bool connect(int senderFd, const string& name)
     string lowCaseName = toLower(name);
     if(userExists(lowCaseName))
     {
-        // print error msg
+        cerr << CLIENT_EXISTS_SERVER_MESSAGE <<endl;
         return FAIL;
     }
     usersByFd[senderFd] = name;
@@ -412,7 +442,7 @@ User& getUser(const string& userName)
 }
 
 
-
+/*
 string getTimeString()
 {
     ostringstream ret;
@@ -463,3 +493,4 @@ string toLower(const string &str)
     transform(copy.begin(),copy.end(),copy.begin(),::tolower);
     return copy;
 }
+*/
