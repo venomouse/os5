@@ -34,6 +34,7 @@ int sendMessage (int socket, string message)
 
 int recvAll (int client_socket, char* buffer)
 {
+    buffer[0]  ='\0';
 	if (!NDEBUG)
 	{
 		cerr << "Receiving message" << endl;
@@ -135,5 +136,12 @@ string toLower(const string &str)
 {
     string newStr = str;
     transform(str.begin(),str.end(), newStr.begin(),::tolower);
+    return newStr;
+}
+
+string toUpper(const string &str)
+{
+    string newStr = str;
+    transform(str.begin(),str.end(), newStr.begin(),::toupper);
     return newStr;
 }

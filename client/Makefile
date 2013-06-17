@@ -1,11 +1,11 @@
-CFLAGS = -Wall -I. -g
+CFLAGS = -Wall -I. -g -std=c++0x
 
 all : twitServer
 
 twitServer: twitClient.cpp twitClient.h common.o
-	g++ twitClient.cpp ../common.o $(CFLAGS) -o twitClient
+	clang++ twitClient.cpp ../common.o $(CFLAGS) -o twitClient
 	
 common.o: ../common.h ../common.cpp
-	g++ -c common.cpp $(CFLAGS) -o ../common.o
+	clang++ -c ../common.cpp $(CFLAGS) -o ../common.o
 clean :
 	rm -rf twitClient *.o

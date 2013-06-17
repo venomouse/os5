@@ -20,6 +20,7 @@
 
 
 #include <sstream>
+#include <vector>
 #include <utility>
 #include "common.h"
 #include "twitServer.h"
@@ -84,7 +85,8 @@ using std::ostringstream;
 using std::make_pair;
 
 int main(int argc, char *argv[]) {
-
+    
+    
     string message;
 
     fd_set master; // master file descriptor list
@@ -425,13 +427,9 @@ int block(int blockerFD, const string& toBlock) {
 }
 
 int who(int senderFd) {
-    set<string> names;
+    stringstream outputStream;
     for(pair<string,User> userData :users ){
-        names.insert(userData.second.realName);
-    }
-    stringstream outputStream ;
-    for (string name: names){
-        outputStream << name<< "\t ";
+        outputStream << userData.second.realName << "\t ";
     }    
     //remove trailing \t
     string output = outputStream.str();

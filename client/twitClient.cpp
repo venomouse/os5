@@ -78,7 +78,7 @@ int main (int argc, char* argv[])
 
 	int client_socket;
 	struct sockaddr_in server_addr;
-	char serverMessageBuffer[MAX_MSG_SIZE];
+	char serverMessageBuffer[MAX_MSG_SIZE] = {0};
 	string message = "";
 
 	//parameters used in selecting between socket and keyboard
