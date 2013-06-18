@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "common.h"
+#include "../common.h"
 
 using namespace std;
 
@@ -28,7 +28,6 @@ using namespace std;
 #define SUCCESS 0
 #define MIN_PORT_NUM 1025
 #define MAX_PORT_NUM 65535
-#define NDEBUG 0
 
 void checkCommandArguments  (char* clientName, int portNum)
 {
@@ -121,8 +120,9 @@ int main (int argc, char* argv[])
 	{
 		cerr << "Sending the client's name" << endl;
 	}
-
-	if (sendMessage (client_socket, string(clientName)) < 0)
+        ostringstream connectMsg;
+        connectMsg << "CONNECT " <<string(clientName);
+	if (sendMessage (client_socket, connectMsg.str()) < 0)
 	{
 		cerr << "Error: Failed to send the client's name to the server" << endl;
 		exit (1);
@@ -169,7 +169,8 @@ int main (int argc, char* argv[])
 			}
 			else
 			{
-				cout << serverMessageBuffer << endl;
+				cout << serverMessageBuffer;
+                                cout.flush();
 			}
 		}
 

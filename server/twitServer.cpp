@@ -22,7 +22,7 @@
 #include <sstream>
 #include <vector>
 #include <utility>
-#include "common.h"
+#include "../common.h"
 #include "twitServer.h"
 
 #define LOG_NAME "twitServer.log"
@@ -52,15 +52,15 @@
 #define MIN_PORT_NUM 1025
 #define MAX_PORT_NUM 65535
 #define BUFFER_SIZE 171 + sizeof(unsigned int)
-#define NDEBUG 0
 #define LOCALHOST "127.0.0.1"
 
 //Messages
 
 //Messages
-#define ILLEGAL_COMMAND_MSG "Error Illegal command "
+#define ALREADY_CONNECTED_MSG "Error: Already connected"
+#define ILLEGAL_COMMAND_MSG "Error: Illegal command "
 #define FROM " from "
-#define CLIENT_NAME_TOO_LONG "Error - client name is too long"
+#define CLIENT_NAME_TOO_LONG "Error:  client name is too long"
 #define BROKEN_DM_MSG "Malformed DM."
 #define BLOCKED_RESPONSE_MSG "Message Blocked."
 #define FOLLOWED_MSG "\tfollowed "
@@ -72,7 +72,7 @@
 #define DISCONNECT_MSG "\tdisconnected."
 #define DM_MSG "\t direct messaged "
 #define CANT_DELETE "\tCant delete user - not exist"
-#define FD_NOT_EXIST_MSG "Error : No such file descriptor"
+#define FD_NOT_EXIST_MSG "Error: No such file descriptor"
 #define USER_NOT_EXIST  string(" does not exist")
 //A homage to php
 #define PAAMAYIM_NEKUDOTAYIM "::"  
@@ -198,14 +198,6 @@ int main(int argc, char *argv[]) {
                         if (newfd > fdmax) { // keep track of the max
                             fdmax = newfd;
                         }
-                        //receiving the name
-                        if ((nbytes = recvAll(newfd, message_buffer)) >= 0) {
-                            //if a client already exists
-                            if (connectClient(newfd, string(message_buffer)) < 0) {
-                                close(newfd);
-                                continue;
-                            }
-                        }
                     }
                 } else {
 
@@ -239,8 +231,9 @@ int parseCommand(int senderFd, const string& command) {
 
 
     string name = getName(senderFd);
-
-    if (operation.compare("EXIT") IS_EQUAL) {
+    if (operation.compare("CONNECT") IS_EQUAL){
+        connectClient( senderFd,args);
+    }else if (operation.compare("EXIT") IS_EQUAL) {
         disconnect(senderFd);
     } else if (operation.compare("FOLLOW") IS_EQUAL) {
         follow(senderFd, args);
@@ -268,6 +261,8 @@ int parseCommand(int senderFd, const string& command) {
     }
     return SUCCESS;
 }
+
+
 
 string getName(int fd) {
     return usersByFd[fd];
@@ -427,17 +422,19 @@ int block(int blockerFD, const string& toBlock) {
 }
 
 int who(int senderFd) {
-    stringstream outputStream;
-    for(pair<string,User> userData :users ){
-        outputStream << userData.second.realName << "\t ";
-    }    
-    //remove trailing \t
-    string output = outputStream.str();
-    if (output.size() > 2){
-        output = output.substr(0,output.size()-2);
+    string output;
+    map<string,User>::const_iterator it = users.begin();
+    for (; it != users.end(); ++it)
+    {
+        output = it->second.realName;
+        if (++it != users.end() ){
+                output.append("\t");
+        }else {
+            output.append("\n");
+        }
+        --it;
+        sendMessage (senderFd,output);
     }
-    sendMessage(senderFd,output);
-    
     log(getName(senderFd).append(WHO_MSG));
     return 0;
 }
@@ -450,10 +447,19 @@ int connectClient(int senderFd, const string& name) {
     log (logMsg.str());
     logMsg.clear();
     logMsg.str(string());
+    
+    if(fdExist(senderFd)){
+        cerr << ALREADY_CONNECTED_MSG << endl;
+        log(ALREADY_CONNECTED_MSG);
+        sendMessage(senderFd,ALREADY_CONNECTED_MSG);
+        return FAIL; 
+    }
+    
     if(name.length() > MAX_NAME_LENGTH){
         cerr << CLIENT_NAME_TOO_LONG << endl;
         log(CLIENT_NAME_TOO_LONG);
         sendMessage(senderFd,CLIENT_NAME_TOO_LONG);
+        close(senderFd);
         return FAIL;
     }
       
@@ -462,6 +468,7 @@ int connectClient(int senderFd, const string& name) {
         logMsg << CLIENT_EXISTS_SERVER_MESSAGE << " " << lowCaseName ;
         log(logMsg.str());
         sendMessage(senderFd, CLIENT_EXISTS_SERVER_MESSAGE);
+        close(senderFd);
         return FAIL;
     }
     usersByFd[senderFd] = lowCaseName;
@@ -472,8 +479,9 @@ int connectClient(int senderFd, const string& name) {
     return SUCCESS;
 }
 
-bool userExists(const string& userNameLowerCase) {
-    return (users.find(userNameLowerCase) != users.end());
+bool userExists(const string& userName) {
+    string userNameLower = toLower(userName);
+    return (users.find(userNameLower) != users.end());
 }
 
 int getFd(const string& userName) {

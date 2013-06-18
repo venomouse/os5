@@ -23,7 +23,7 @@
 #define CONNECTION_SUCCESSFUL_MESSAGE "Connection successful"
 #define SPACES " \n\r\t"
 #define ERROR string("Error ")
-#define NDEBUG 0
+#define NDEBUG 1
 
 using std::string;
 
@@ -36,6 +36,7 @@ string beforeSpace(const string& stringWithSpace );
 string afterSpace(const string& stringWithSpace );
 string strip(const string& stringWithSpaces );
 string toLower(const string &str);
+string toUpper(const string &str);
 
 
 #endif /* COMMUNICATIONFUNCTIONS_H_ */
