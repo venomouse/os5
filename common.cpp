@@ -28,6 +28,7 @@ int sendMessage (int socket, string message)
 	}
 
 	message = msgLen.append(message);
+        message = string("%").append(message);
 
 	return send (socket, message.c_str(), message.size(), 0 );
 }
@@ -40,9 +41,23 @@ int recvAll (int client_socket, char* buffer)
 		cerr << "Receiving message" << endl;
 	}
     int recv_result;
+    char sig = '\0';
+    char* sig_p = &sig;
     char stringSize[3] = "";
     char tempBuffer[BUFFER_SIZE] = "";
     unsigned int intMsgSize =0;
+    
+    if ( ( (recv_result = recv (client_socket, sig_p, 1, 0)) <= 0))
+    {
+        return 0;
+    }
+    
+    if (*sig_p != SIGNATURE )
+    {
+        //TODO: error to write?
+        return 0;
+    }
+    
     if ( ( (recv_result = recv (client_socket, stringSize, 3, 0)) <= 0))
     {
         return 0;

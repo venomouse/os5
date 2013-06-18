@@ -16,6 +16,9 @@
 #include <sstream>
 #include <iostream>
 
+#define IS_EQUAL == 0
+#define SIGNATURE_LENGTH 4
+#define SIGNATURE '%'
 #define BUFFER_SIZE 171 + sizeof(unsigned int)
 #define SERVICE_PREFIX_LENGTH 4
 #define MAX_MSG_SIZE  BUFFER_SIZE - SERVICE_PREFIX_LENGTH
@@ -23,7 +26,7 @@
 #define CONNECTION_SUCCESSFUL_MESSAGE "Connection successful"
 #define SPACES " \n\r\t"
 #define ERROR string("Error ")
-#define NDEBUG 1
+#define NDEBUG 0
 
 using std::string;
 
