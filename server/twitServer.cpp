@@ -22,7 +22,7 @@
 #include <sstream>
 #include <vector>
 #include <utility>
-#include "../common.h"
+#include "common.h"
 #include "twitServer.h"
 
 #define LOG_NAME "twitServer.log"
@@ -39,7 +39,6 @@
 
 //some buggy clients might do this
 #define SENT_00 -2
-#define FAIL 1
 #define SUCCESS 0
 #define NO_SUCH_USER -2
 
@@ -57,40 +56,43 @@
 //Messages
 
 //Messages
-#define ALREADY_CONNECTED_MSG "Error: Already connected"
-#define ILLEGAL_COMMAND_MSG "Error: Illegal command "
+#define ALREADY_CONNECTED_MSG "Error: Already connected\n"
+#define ILLEGAL_COMMAND_MSG "Error: Illegal command"
 #define FROM " from "
-#define CLIENT_NAME_TOO_LONG "Error:  client name is too long"
-#define BROKEN_DM_MSG "Malformed DM."
-#define BLOCKED_RESPONSE_MSG "Message Blocked."
-#define FOLLOWED_MSG "\tfollowed "
-#define UNFOLLOWED_MSG "\tunfollowed "
-#define BLOCKED_MSG "\tblocked "
-#define WHO_MSG "\twho."
-#define TWITED_MSG "\ttwitted "
-#define CONNECT_MSG "\tconneted.";
-#define DISCONNECT_MSG "\tdisconnected."
+#define CLIENT_NAME_TOO_LONG "Error:  client name is too long\n"
+#define BROKEN_DM_MSG "Error: Malformed DM.\n"
+#define BLOCKED_RESPONSE_MSG "Message Blocked.\n"
+#define FOLLOWED_MSG "\t followed "
+#define UNFOLLOWED_MSG "\t unfollowed "
+#define BLOCKED_MSG "\t blocked "
+#define WHO_MSG "\t who.\n"
+#define TWITED_MSG "\t twitted "
+#define CONNECT_MSG "\t connected.\n";
+#define DISCONNECT_MSG "\t disconnected.\n"
 #define DM_MSG "\t direct messaged "
-#define CANT_DELETE "\tCant delete user - not exist"
-#define FD_NOT_EXIST_MSG "Error: No such file descriptor"
-#define USER_NOT_EXIST  string(" does not exist")
+#define CANT_DELETE "Error: Cant delete user - does not exist"
+#define FD_NOT_EXIST_MSG "Error: No such file descriptor.\n"
+#define USER_NOT_EXIST  string(" does not exist.\n")
 //A homage to php
 #define PAAMAYIM_NEKUDOTAYIM "::"  
 #define DASHDASH "--" 
 
-fstream logFile;
+std::fstream logFile;
 using std::cerr;
+using std::cout;
 using std::endl;
 using std::ostringstream;
+using std::pair;
 using std::make_pair;
+using std::fstream;
+using std::stringstream;
+
 
 int main(int argc, char *argv[]) {
     
     
     string message;
 
-    fd_set master; // master file descriptor list
-    fd_set read_fds; // temp file descriptor list for select()
     int newfd; // newly accepted socket descriptor
     int fdmax; // maximum file descriptor number
     struct sockaddr_storage remoteaddr; // client address
@@ -156,7 +158,8 @@ int main(int argc, char *argv[]) {
     
     if (openLog())
     {
-     cerr << "Log failed to open" << endl;   
+    	cerr << "Log failed to open" << endl;
+    	exit (1);
     }
     
 
@@ -169,15 +172,18 @@ int main(int argc, char *argv[]) {
         read_fds = master; // copy it
 
         if (select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1) {
-            cerr << "Failed to select";
+            cerr << "Error: Failed to select";
             exit(1);
         }
         if (FD_ISSET (STDIN_FILENO, &read_fds))
         {
-            getline(cin,message);
-            if (message.compare("EXIT") IS_EQUAL){
+            getline(std::cin,message);
+            cout << toLower(message).compare("exit");
+            cout.flush();
+            if (toLower(message).compare("exit") IS_EQUAL){
                 for(pair<int,string> userPair: usersByFd){
                         close(userPair.first);
+                        cout <<userPair.first <<endl;
                         log(userPair.second.append(DISCONNECT_MSG));
                 }           
                 logFile.close();
@@ -191,7 +197,7 @@ int main(int argc, char *argv[]) {
                     // handle new connections
                     client_length = sizeof remoteaddr;
                     if ((newfd = accept(server_socket, (struct sockaddr *) &remoteaddr, &client_length)) < 0) {
-                        cerr << "Failed to accept" << endl;
+                        cerr << "Error: Failed to accept" << endl;
                         exit(1);
                     } else {
                         FD_SET(newfd, &master);
@@ -210,7 +216,7 @@ int main(int argc, char *argv[]) {
                         close(i);
                         FD_CLR(i, &master);
                     } else {
-                        cerr << "Recv error" << endl;
+                        cerr << "Error: Failed to receive from a client" << endl;
                         exit(1);
                     }
                     message_buffer[0] = '\0';
@@ -253,8 +259,8 @@ int parseCommand(int senderFd, const string& command) {
         who(senderFd);
     }else{
         stringstream logMsg;
-        logMsg << ILLEGAL_COMMAND_MSG << operation << FROM << name;
-        cerr << logMsg.str() << endl;
+        logMsg << ILLEGAL_COMMAND_MSG << operation << FROM << name<<".\n";
+        cerr << logMsg.str(); cerr.flush();
         log(logMsg.str());
         sendMessage(senderFd,logMsg.str());
         return FAIL;
@@ -265,29 +271,35 @@ int parseCommand(int senderFd, const string& command) {
 
 
 string getName(int fd) {
+	if (!NDEBUG)
+	{
+		//cerr << "user " << usersByFd[fd] << endl;
+	}
     return usersByFd[fd];
 }
 
 int disconnect(int senderFd) {
 
-    if (NOT fdExist(senderFd))
+  /*  if (NOT fdExist(senderFd))
     {
         log(CANT_DELETE);
         return FAIL;
-    }
+    }*/
 
     //delete the user from users structures
 
     for( pair<string,User> pair: users)
     {
-      pair.second.followers.erase(senderFd);
-      pair.second.blocked.erase(senderFd);
+    	pair.second.followers.erase(senderFd);
+    	pair.second.blocked.erase(senderFd);
     }
     string name = getName(senderFd);
     users.erase(name);
     usersByFd.erase(senderFd);
 
     log(name.append(DISCONNECT_MSG));
+    close (senderFd);
+    FD_CLR (senderFd, &master);
     return true;
 }
 
@@ -300,13 +312,14 @@ int twit(int senderFd, const string& message) {
     ostringstream toTwit;
     string senderName = getName(senderFd);
     string truncatedMsg = message.substr(0,140);
-    toTwit << getTimeString() << PAAMAYIM_NEKUDOTAYIM << senderName  << NAME_TWIT_SEPERATOR <<truncatedMsg;    
+    toTwit << getTimeString() << PAAMAYIM_NEKUDOTAYIM << senderName  << NAME_TWIT_SEPERATOR <<truncatedMsg <<"\n";
     for (int fd : users.at(senderName).followers) {
         sendMessage(fd, toTwit.str());
     }
 
     senderName.append(TWITED_MSG);
-    log(senderName.append(truncatedMsg));
+    senderName.append(truncatedMsg);
+    log(senderName.append(".\n"));
     return SUCCESS;
 }
 
@@ -316,8 +329,9 @@ int follow(int senderFd, string& toFollow) {
         log(FD_NOT_EXIST_MSG);
         return FAIL;    
     }
-    stringstream logMsg(getName(senderFd));
-    logMsg<< FOLLOWED_MSG << toFollow<< ".";
+    stringstream logMsg;
+    string senderName = getName (senderFd);
+    logMsg<<senderName<<FOLLOWED_MSG << toFollow<< ".\n";
     log(logMsg.str());
     if (NOT userExists(toFollow)) //cant follow - no such user
     {
@@ -327,13 +341,18 @@ int follow(int senderFd, string& toFollow) {
         log(error.str());
         return FAIL;
     }
+    //If sender followed someone after blocking him, the block is erased
+    if (users.at(senderName).blocked.find(getFd(toFollow)) != users.at(senderName).blocked.end())
+    {
+    	users.at(senderName).blocked.erase(getFd(toFollow));
+    }
     users.at(toFollow).followers.insert(senderFd);
     return SUCCESS;
 }
 
 int unFollow(int senderFd, string& toUnfollow) {
-    stringstream logMsg(getName(senderFd));
-    logMsg << UNFOLLOWED_MSG << toUnfollow << ".";
+    stringstream logMsg;
+    logMsg <<getName(senderFd)<< UNFOLLOWED_MSG << toUnfollow << ".\n";
     log(logMsg.str());
     if (NOT fdExist(senderFd))//sender is invalid - something is wrong
     {
@@ -351,20 +370,23 @@ int unFollow(int senderFd, string& toUnfollow) {
 }
 
 int directMessage(int senderFd, string& toAndMessage) {
-    unsigned int nsLocation;
+    int nsLocation;
     if (NOT fdExist(senderFd)) //sender is invalid - something is wrong
     {
         log(FD_NOT_EXIST_MSG);
         return FAIL;
     }
-    if((nsLocation = toAndMessage.find(NAME_SEPARATOR)) == string::npos){
-        log(BROKEN_DM_MSG);
+    if((nsLocation = toAndMessage.find(NAME_SEPARATOR)) < 0){
+        cerr << BROKEN_DM_MSG;
+        cerr.flush();
+        sendMessage(senderFd, BROKEN_DM_MSG);
+    	log(BROKEN_DM_MSG);
         return FAIL;
     }
     string to = toAndMessage.substr(0,nsLocation);
     string content = toAndMessage.substr(nsLocation+1,140+nsLocation);
-    stringstream logMsg(getName(senderFd));
-    logMsg << DM_MSG << to << "\t " << content ;
+    stringstream logMsg;
+    logMsg << getName(senderFd)<<DM_MSG << to << "\t " << content << "\n";
     log(logMsg.str());
     
     logMsg.clear();
@@ -404,8 +426,8 @@ int block(int blockerFD, const string& toBlock) {
     if (NOT fdExist(blockerFD)) {
         return FAIL;
     }
-    stringstream logMsg(blockerName);
-    logMsg << BLOCKED_MSG << toBlock;
+    stringstream logMsg;
+    logMsg << blockerName <<BLOCKED_MSG << toBlock;
     log(logMsg.str());
     if (NOT userExists(toBlock)) {
         logMsg.clear();
@@ -427,7 +449,8 @@ int who(int senderFd) {
     for (; it != users.end(); ++it)
     {
         output = it->second.realName;
-        if (++it != users.end() ){
+        if (++it != users.end() )
+        {
                 output.append("\t");
         }else {
             output.append("\n");
@@ -449,30 +472,34 @@ int connectClient(int senderFd, const string& name) {
     logMsg.str(string());
     
     if(fdExist(senderFd)){
-        cerr << ALREADY_CONNECTED_MSG << endl;
+        cerr << strip (string(ALREADY_CONNECTED_MSG)) << endl;
         log(ALREADY_CONNECTED_MSG);
         sendMessage(senderFd,ALREADY_CONNECTED_MSG);
         return FAIL; 
     }
     
-    if(name.length() > MAX_NAME_LENGTH){
-        cerr << CLIENT_NAME_TOO_LONG << endl;
+    if(checkClientName(name.c_str()) < 0){
+        cerr << CLIENT_NAME_ILLEGAL_MESSAGE;
+        cerr.flush();
         log(CLIENT_NAME_TOO_LONG);
         sendMessage(senderFd,CLIENT_NAME_TOO_LONG);
         close(senderFd);
+        FD_CLR (senderFd, &master);
         return FAIL;
     }
       
     if (userExists(lowCaseName)) {
-        cerr << CLIENT_EXISTS_SERVER_MESSAGE << endl;
-        logMsg << CLIENT_EXISTS_SERVER_MESSAGE << " " << lowCaseName ;
+        cerr << CLIENT_EXISTS_MESSAGE;
+        cerr.flush();
+        logMsg << CLIENT_EXISTS_MESSAGE  ;
         log(logMsg.str());
-        sendMessage(senderFd, CLIENT_EXISTS_SERVER_MESSAGE);
+        sendMessage(senderFd, CLIENT_EXISTS_MESSAGE);
         close(senderFd);
+        FD_CLR (senderFd, &master);
         return FAIL;
     }
     usersByFd[senderFd] = lowCaseName;
-    users.insert(make_pair(lowCaseName, User(name, senderFd)));
+    users.insert(std::make_pair(lowCaseName, User(name, senderFd)));
 
  
     sendMessage(senderFd, CONNECTION_SUCCESSFUL_MESSAGE);
@@ -501,14 +528,20 @@ User& getUser(const string& userName) {
 int log(const string& message){
     
     
-    logFile << message.substr(0,BUFFER_SIZE) << endl;
+    logFile << message.substr(0,BUFFER_SIZE);
     return logFile.bad();
 }
 
 
 bool fdExist(int fd){
-    if ( usersByFd.find(fd) ==  usersByFd.end()){
+    if ( usersByFd.find(fd) ==  usersByFd.end())
+    {
         return false;
+    }
+
+    if (!NDEBUG)
+    {
+    	cerr << userExists(getName(fd)) << endl;
     }
     return userExists(getName(fd));
 }
@@ -516,7 +549,7 @@ bool fdExist(int fd){
 
 
 int openLog(){
-    logFile.open(LOG_NAME,fstream::out|fstream::app);
+    logFile.open(LOG_NAME,fstream::out|fstream::trunc);
     return logFile.bad();
 }
 

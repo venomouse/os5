@@ -160,3 +160,16 @@ string toUpper(const string &str)
     transform(str.begin(),str.end(), newStr.begin(),::toupper);
     return newStr;
 }
+
+int checkClientName (const char* clientName)
+{
+
+	if (strlen (clientName) > MAX_CLIENT_NAME_LENGTH || (strchr(clientName, ' ') != NULL) ||
+			(strchr (clientName, '@') != NULL))
+	{
+		return FAIL;
+	}
+
+	return SUCCESS;
+
+}

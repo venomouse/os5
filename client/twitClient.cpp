@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "../common.h"
+#include "common.h"
 
 using namespace std;
 
@@ -29,22 +29,6 @@ using namespace std;
 #define MIN_PORT_NUM 1025
 #define MAX_PORT_NUM 65535
 
-void checkCommandArguments  (char* clientName, int portNum)
-{
-	if (portNum < MIN_PORT_NUM || portNum > MAX_PORT_NUM)
-	{
-		cerr << "Error: illegal port number. " << endl;
-		exit(1);
-	}
-
-	if (strlen (clientName) > MAX_CLIENT_NAME_LENGTH || (strchr(clientName, ' ') != NULL) ||
-			(strchr (clientName, '@') != NULL))
-	{
-		cerr << "Error: illegal client name." << endl;
-		exit(1);
-	}
-
-}
 
 bool isExit (string message)
 {
@@ -69,11 +53,22 @@ int main (int argc, char* argv[])
                 exit(1);
 	}
 
+
 	char* clientName = argv[1];
 	char* address = argv[2];
-	int port_num = atoi (argv[3]);
+	int portNum = atoi (argv[3]);
 
-	checkCommandArguments (clientName, port_num);
+	if (portNum < MIN_PORT_NUM || portNum > MAX_PORT_NUM)
+		{
+			cerr << "Error: illegal port number. " << endl;
+			exit(1);
+		}
+
+	if (checkClientName (clientName) < 0)
+	{
+		cerr << CLIENT_NAME_ILLEGAL_MESSAGE << endl;
+		exit(1);
+	}
 
 	int client_socket;
 	struct sockaddr_in server_addr;
@@ -96,7 +91,7 @@ int main (int argc, char* argv[])
 
 	server_addr.sin_family = AF_INET;
 	//The port number is the command parameter
-	server_addr.sin_port = htons(port_num);
+	server_addr.sin_port = htons(portNum);
 	//TODO check error
 	if (!inet_aton(address,&server_addr.sin_addr))
 	{
@@ -134,7 +129,8 @@ int main (int argc, char* argv[])
 		exit (1);
 	}
 
-	if (strcmp (serverMessageBuffer, CLIENT_EXISTS_SERVER_MESSAGE) == 0)
+	//Compare it with the right message
+	if (strcmp (serverMessageBuffer, CLIENT_EXISTS_MESSAGE) == 0)
 	{
 		cerr << serverMessageBuffer << endl;
 		//TODO disconnect

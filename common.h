@@ -21,12 +21,16 @@
 #define SIGNATURE '%'
 #define BUFFER_SIZE 171 + sizeof(unsigned int)
 #define SERVICE_PREFIX_LENGTH 4
+#define MAX_CLIENT_NAME_LENGTH 30
 #define MAX_MSG_SIZE  BUFFER_SIZE - SERVICE_PREFIX_LENGTH
-#define CLIENT_EXISTS_SERVER_MESSAGE "Error: client name already in use"
+#define CLIENT_EXISTS_MESSAGE "Error: client name already in use.\n"
+#define CLIENT_NAME_ILLEGAL_MESSAGE "Error: illegal client name.\n"
 #define CONNECTION_SUCCESSFUL_MESSAGE "Connection successful"
 #define SPACES " \n\r\t"
-#define ERROR string("Error ")
+#define ERROR string("Error: ")
 #define NDEBUG 0
+#define FAIL -1
+#define SUCCESS 0
 
 using std::string;
 
@@ -40,6 +44,7 @@ string afterSpace(const string& stringWithSpace );
 string strip(const string& stringWithSpaces );
 string toLower(const string &str);
 string toUpper(const string &str);
+int checkClientName (const char* name);
 
 
 #endif /* COMMUNICATIONFUNCTIONS_H_ */
