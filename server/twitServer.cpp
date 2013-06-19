@@ -313,7 +313,7 @@ int twit(int senderFd, const string& message) {
     string senderName = getName(senderFd);
     string truncatedMsg = message.substr(0,140);
     toTwit << getTimeString() << PAAMAYIM_NEKUDOTAYIM << senderName  << NAME_TWIT_SEPERATOR <<truncatedMsg <<"\n";
-    for (int fd : users.at(senderName).followers) {
+    for (int fd : users.at(toLower(senderName)).followers) {
         sendMessage(fd, toTwit.str());
     }
 
@@ -342,11 +342,11 @@ int follow(int senderFd, string& toFollow) {
         return FAIL;
     }
     //If sender followed someone after blocking him, the block is erased
-    if (users.at(senderName).blocked.find(getFd(toFollow)) != users.at(senderName).blocked.end())
+    if (users.at(toLower(senderName)).blocked.find(getFd(toFollow)) != users.at(toLower(senderName)).blocked.end())
     {
-    	users.at(senderName).blocked.erase(getFd(toFollow));
+    	users.at(toLower(senderName)).blocked.erase(getFd(toFollow));
     }
-    users.at(toFollow).followers.insert(senderFd);
+    users.at(toLower(toFollow)).followers.insert(senderFd);
     return SUCCESS;
 }
 
@@ -365,7 +365,7 @@ int unFollow(int senderFd, string& toUnfollow) {
         sendMessage(senderFd,toUnfollow.append(USER_NOT_EXIST));
         return FAIL;
     }
-    users.at(toUnfollow).followers.erase(senderFd);
+    users.at(toLower(toUnfollow)).followers.erase(senderFd);
     return SUCCESS;
 }
 
@@ -383,7 +383,7 @@ int directMessage(int senderFd, string& toAndMessage) {
     	log(BROKEN_DM_MSG);
         return FAIL;
     }
-    string to = toAndMessage.substr(0,nsLocation);
+    string to = toLower(toAndMessage.substr(0,nsLocation));
     string content = toAndMessage.substr(nsLocation+1,140+nsLocation);
     stringstream logMsg;
     logMsg << getName(senderFd)<<DM_MSG << to << "\t " << content << "\n";
@@ -399,10 +399,10 @@ int directMessage(int senderFd, string& toAndMessage) {
         return FAIL;
     }
     //DEBUG
-    for (int fd : users.at(to).blocked){
+    for (int fd : users.at(toLower(to)).blocked){
         cout << fd<< endl;
     }
-    if (users.at(to).blocked.find(senderFd) != users.at(to).blocked.end()) {
+    if (users.at(toLower(to)).blocked.find(senderFd) != users.at(to).blocked.end()) {
         sendMessage(senderFd,BLOCKED_RESPONSE_MSG);
         log(BLOCKED_MSG);
         return FAIL;
@@ -414,7 +414,8 @@ int directMessage(int senderFd, string& toAndMessage) {
             << NAME_SEPARATOR
             << to
             << DASHDASH
-            << content;
+            << content
+            << "\n";
 
     sendMessage(getFd(to),message.str());
     return SUCCESS;
@@ -437,8 +438,8 @@ int block(int blockerFD, const string& toBlock) {
         log(logMsg.str());
         return FAIL;
     }
-    users.at(blockerName).blocked.insert(getFd(toBlock));
-    users.at(toBlock).followers.erase(blockerFD);
+    users.at(toLower(blockerName)).blocked.insert(getFd(toBlock));
+    users.at(toLower(toBlock)).followers.erase(blockerFD);
 
     return SUCCESS;
 }
