@@ -1,0 +1,30 @@
+smdyshel, oryonatan
+Maria Dyshel (32212808), Yonathan Oren (300704327)
+EX: 5
+
+FILES: 
+twitServer.h - header file of the server 
+twitServer.cpp - implementation of the server
+twitClient.cpp - implementation of the client
+common.h - header of protocol functions and other functions used both 		by the client and the server
+common.cpp - implementation of the common functions
+
+REMARKS:
+
+* Server design: The client is represented by a User struct, that
+ includes all information about the client - his name, user, and sets of the clients that he follows or blocks. 
+
+The server includes 2 data structures: the map usersByFd, that maps the socket number to the name of the client that's connected to the
+ socket, and the map users, that maps the string signifying the
+ client's name to the User struct that represents it.The name of the user is written as it was entered by the client, by name recognition
+is case insensitive as required.
+
+* Connection protocol between the client and the server: each message
+ between the client and the server starts by authentication sign '%'.
+ This serves to filter authomatically most of the messages from
+ clients that do not work by the protocol. After the authentication
+ sign, follows the length of the message in 3-digit number. The receiving side uses this length to know how many bytes it should receive.  The chance that an alient client will send a message to the server starting with '%" and following numbers is relatively low. If any of the sides does not follow the protocol, the other side disconnects.
+
+ANSWERS:
+No questions were asked.
+
