@@ -21,7 +21,6 @@
 using namespace std;
 
 #define MAX_CLIENT_NAME_LENGTH 30
-#define BUFFER_SIZE 171 + sizeof(unsigned int)
 #define SERVICE_PREFIX_LENGTH 4
 #define MAX_MSG_SIZE BUFFER_SIZE - SERVICE_PREFIX_LENGTH
 #define FAIL -1
@@ -66,7 +65,7 @@ int main (int argc, char* argv[])
 
 	if (checkClientName (clientName) < 0)
 	{
-		cerr << CLIENT_NAME_ILLEGAL_MESSAGE << endl;
+		cerr << CLIENT_NAME_ILLEGAL_MESSAGE;
 		exit(1);
 	}
 
@@ -132,9 +131,15 @@ int main (int argc, char* argv[])
 	//Compare it with the right message
 	if (strcmp (serverMessageBuffer, CLIENT_EXISTS_MESSAGE) == 0)
 	{
-		cerr << serverMessageBuffer << endl;
-		//TODO disconnect
+		cerr << serverMessageBuffer;
 		exit (1);
+	}
+
+	if (strcmp (serverMessageBuffer, CONNECTION_SUCCESSFUL_MESSAGE) != 0)
+	{
+		cerr << "Error: wrong connection protocol" <<endl;
+		exit(1);
+
 	}
 
 	cout << "Connected successfully" <<endl;

@@ -50,10 +50,8 @@
 #define MAX_NAME_LENGTH 30
 #define MIN_PORT_NUM 1025
 #define MAX_PORT_NUM 65535
-#define BUFFER_SIZE 171 + sizeof(unsigned int)
 #define LOCALHOST "127.0.0.1"
 
-//Messages
 
 //Messages
 #define ALREADY_CONNECTED_MSG "Error: Already connected\n"
@@ -178,12 +176,10 @@ int main(int argc, char *argv[]) {
         if (FD_ISSET (STDIN_FILENO, &read_fds))
         {
             getline(std::cin,message);
-            cout << toLower(message).compare("exit");
             cout.flush();
             if (toLower(message).compare("exit") IS_EQUAL){
                 for(pair<int,string> userPair: usersByFd){
                         close(userPair.first);
-                        cout <<userPair.first <<endl;
                         log(userPair.second.append(DISCONNECT_MSG));
                 }           
                 logFile.close();
@@ -398,10 +394,6 @@ int directMessage(int senderFd, string& toAndMessage) {
         log(logMsg.str());
         return FAIL;
     }
-    //DEBUG
-    for (int fd : users.at(toLower(to)).blocked){
-        cout << fd<< endl;
-    }
     if (users.at(toLower(to)).blocked.find(senderFd) != users.at(to).blocked.end()) {
         sendMessage(senderFd,BLOCKED_RESPONSE_MSG);
         log(BLOCKED_MSG);
@@ -495,6 +487,7 @@ int connectClient(int senderFd, const string& name) {
         logMsg << CLIENT_EXISTS_MESSAGE  ;
         log(logMsg.str());
         sendMessage(senderFd, CLIENT_EXISTS_MESSAGE);
+        usersByFd.erase(senderFd);
         close(senderFd);
         FD_CLR (senderFd, &master);
         return FAIL;

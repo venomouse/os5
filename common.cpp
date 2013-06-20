@@ -161,7 +161,7 @@ string toUpper(const string &str)
     return newStr;
 }
 
-int checkClientName (const char* clientName)
+int checkClientName (char const* clientName)
 {
 
 	if (strlen (clientName) > MAX_CLIENT_NAME_LENGTH || (strchr(clientName, ' ') != NULL) ||

@@ -1,3 +1,4 @@
+CFLAGS = -c -std=c++0x -Wall
 
 all: twitServer twitClient
 
@@ -8,10 +9,11 @@ twitClient: twitClient.o common.o
 	g++ twitClient.o common.o -o twitClient
 
 twitServer.o: twitServer.h common.h twitServer.cpp
-	g++ -c twitServer.cpp -std=c++0x
+	g++  twitServer.cpp $(CFLAGS)
 
 twitClient.o: twitClient.h common.h twitClient.cpp
-	g++ -c twitClient.cpp 
+	g++  twitClient.cpp $(CFLAGS)
 
 common.o: common.h common.cpp
-	g++ -c common.cpp
+	g++  common.cpp $(CFLAGS)
+

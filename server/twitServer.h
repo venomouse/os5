@@ -89,22 +89,9 @@ int getFd(const string& userNameLowerCase);
 //Opens the log file
 int openLog();
 
-//Strips the given string from spaces in the beginning and the end of the string
-string strip(const string& stringWithSpaces );
-
-//For a string of two parts separated with space/s, returns the part of the string
-//before the space
-string beforeSpace(const string& stringWithSpace );
-
-//For a string of two parts separated with space/s, returns the part of the string
-//after the space
-string afterSpace(const string& stringWithSpace );
 
 // Creates an error message as require by the format of the log
 string createErrorMsg(const string& userName, const string& errorType);
-
-// Get the time of the message in the format required by the log
-string getTimeString();
 
 
 
